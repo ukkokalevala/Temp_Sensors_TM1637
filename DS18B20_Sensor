@@ -1,0 +1,45 @@
+#include <TM1637Display.h>
+#include <OneWire.h>
+#include <DallasTemperature.h>
+
+// Pin definitions
+#define CLK 2
+#define DIO 3
+#define ONE_WIRE_BUS A0  // Pin where the DS18B20 is connected
+
+// Create an instance of the TM1637 display
+TM1637Display display(CLK, DIO);
+
+// Set up OneWire communication and DS18B20
+OneWire oneWire(ONE_WIRE_BUS);
+DallasTemperature sensors(&oneWire);
+
+// Create °C symbol
+const uint8_t celsius[] = {
+  SEG_A | SEG_B | SEG_F | SEG_G,  // Circle
+  SEG_A | SEG_D | SEG_E | SEG_F   // C
+};
+
+void setup() {
+  Serial.begin(115200);
+  display.setBrightness(0x0f);  // Set maximum brightness
+  display.clear();              // Clear the display
+  sensors.begin();              // Initialize the DS18B20 sensor
+}
+
+void loop() {
+  sensors.requestTemperatures();    // Request temperature from DS18B20
+  float Temperature = sensors.getTempCByIndex(0);  // Get temperature in Celsius
+
+  // Check if temperature is valid
+  if (Temperature == DEVICE_DISCONNECTED_C) {
+    Serial.println(F("Failed to read from DS18B20 sensor!"));
+    return;
+  }
+
+  // Display temperature with °C symbol
+  display.clear();  // Clear display before showing temperature
+  display.showNumberDec(int(Temperature), false, 2, 0);  // Show temperature as an integer
+  display.setSegments(celsius, 2, 2);               // Show °C symbol
+  delay(2000);  // Hold for 2 seconds
+}
