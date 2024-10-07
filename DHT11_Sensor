@@ -1,0 +1,57 @@
+#include <TM1637Display.h>
+#include <Adafruit_Sensor.h>
+#include <DHT.h>
+
+// Pin definitions
+#define CLK 2
+#define DIO 3
+#define DHTPIN A0
+
+// Create an instance of the DHT sensor
+#define DHTTYPE DHT11   // Uncomment for DHT 11 
+//#define DHTTYPE DHT22   // Uncomment for DHT 22 
+DHT dht(DHTPIN, DHTTYPE);
+
+// Create an instance of the TM1637 display
+TM1637Display display(CLK, DIO);
+
+// Create °C symbol
+const uint8_t celsius[] = {
+  SEG_A | SEG_B | SEG_F | SEG_G,  // Circle
+  SEG_A | SEG_D | SEG_E | SEG_F   // C
+};
+
+void setup() {
+  Serial.begin(115200);
+  display.setBrightness(0x0f);  // Set maximum brightness
+  display.clear();              // Clear the display
+  dht.begin();                  // Initialize the DHT sensor
+}
+
+void loop() {
+  // Read temperature and humidity
+  float Temperature = dht.readTemperature();
+  float Humidity = dht.readHumidity();
+
+  // Check if any reads failed and exit early (to try again).
+  if (isnan(Temperature) || isnan(Humidity)) {
+    Serial.println(F("Failed to read from DHT sensor!"));
+    return;
+  }
+
+  // Scroll between temperature and humidity
+  scrollTemperatureHumidity(Temperature, Humidity);
+}
+
+void scrollTemperatureHumidity(float temp, float humidity) {
+  // Display temperature with °C symbol
+  display.clear();  // Clear display before showing temperature
+  display.showNumberDec(int(temp), false, 2, 0);  // Show temperature as an integer
+  display.setSegments(celsius, 2, 2);               // Show °C symbol
+  delay(2000);  // Hold for 2 seconds
+
+  // Display humidity value without symbols
+  display.clear();  // Clear display before showing humidity
+  display.showNumberDecEx(int(humidity), 0, false, 2, 0);  // Show only two digits for humidity
+  delay(2000);  // Hold for 2 seconds
+}
